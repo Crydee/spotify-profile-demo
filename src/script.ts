@@ -5,12 +5,16 @@ const code = params.get("code");
 if (!code) {
     redirectToAuthCodeFlow(clientId);
 } else {
-    const accessToken = await getAccessToken(clientId, code);
+    // We'll use this access token to authenticate our subsequent requests
+    var accessToken = await getAccessToken(clientId, code);
     const profile = await fetchProfile(accessToken);
+
     // Log what is returned to our request for our profile info to the console
     console.log(profile);
+
+    // Fetch the playlists and store the response
     const playlists = await fetchPlaylists(accessToken);
-    console.log(playlists);
+    populate_playlists(playlists);
     populateUI(profile);
 }
 
@@ -25,7 +29,7 @@ async function redirectToAuthCodeFlow(clientId: string) {
     params.append("client_id", clientId);
     params.append("response_type", "code");
     params.append("redirect_uri", "http://localhost:5173/callback");
-    params.append("scope", "user-read-private user-read-email");
+    params.append("scope", "playlist-read-private user-read-private user-read-email");
     params.append("code_challenge_method", "S256");
     params.append("code_challenge", challenge);
 
@@ -82,13 +86,151 @@ async function fetchProfile(token: string): Promise<UserProfile> {
     return await result.json();
 }
 
-async function fetchPlaylists(token: string): Promise<any> {
-  const result = await fetch("https://api.spotify.com/v1/me/playlists", {
-    method: "GET", headers: { Authorization: `Bearer ${token}` }
-  });
+// Helper fct to get all the contents of a pages response.
+// Returns an array of pages of the response.
+async function get_paged_response(token: string, url: URL) {
 
-  return await result.json();
+  var results: Object[] = [];
+  while (url !== null) {
+    // Fetch a page of the contents and read it's content
+    var rsp = await fetch(`${url}`, {
+      method: "GET", headers: { Authorization: `Bearer ${token}` }
+    });
+    var rspContents = await rsp.json();
+    results.push(rspContents);
+    // Update the URL to be the next page of results
+    url = rspContents.next;
+  }
+
+  return results;
+}
+
+async function fetchPlaylists(token: string): Promise<any> {
+  const responses = await get_paged_response(token, "https://api.spotify.com/v1/me/playlists");
+  console.log(`Responses are: ${responses}`);
+
+  let playlists: SimplifiedPlaylistObject[] = [];
+  for (let rsp of responses) {
+    rsp.items.forEach((item) => {
+      playlists.push(item);
+    });
+  }
+
+  console.log(`Playlists are ${JSON.stringify(playlists)}`);
+  return playlists;
+
+  // TODO use the paged results now rather than just the first page of results.
+//  const result = await fetch("https://api.spotify.com/v1/me/playlists?limit=50", {
+//    method: "GET", headers: { Authorization: `Bearer ${token}` }
+//  });
+
+//  return await result.json();
   //TODO Make sure that we are handling paging properly, or at least requenting a large number of playlists off the bat.
+}
+
+// From the playlist object, get the tracks
+async function get_playlist_album_art(token: string, tracksRef: string): Promise<Object> {
+  console.log(`playlist href is: ${tracksRef}`);
+  const responses = await get_paged_response(token, tracksRef);
+  let images: Object[] = [];
+  for (let rsp of responses) {
+    rsp.items.map((item) => {
+      if (item.track.type === "track") {
+        images.push(item.track.album.images[0]);
+      }
+    });
+  }
+
+  return images;
+}
+
+// Display the album art on the screen in a grid
+function display_album_art_grid(images: Object[]) {
+  const dimensions = Math.floor(Math.sqrt(images.length));
+
+  // Create the new body element with a grid of images
+  let newBody = document.createElement("body");
+  newBody.id = "imageBodyElement";
+
+  for (let row = 0; row < dimensions; row++) {
+    // Create a row div and add it to the body
+    console.log(`Creating row ${row}`);
+    let newRow = document.createElement("div");
+    newRow.classList.add("row");
+    newBody.appendChild(newRow);
+    for (let col = 0; col < dimensions; col++) {
+      // Create a column div and add it to the row
+      console.log(`Creating column ${col}`);
+      let newCol = document.createElement("div");
+      newCol.classList.add("column");
+
+      // Add the image to this cell
+      const cellImage = new Image(200,200);
+      console.log(`displaying image: ${images[0].url}`);
+      cellImage.src = images[dimensions * row + col].url;
+      newCol.appendChild(cellImage);
+      newRow.appendChild(newCol);
+    }
+  }
+
+  document.body = newBody;
+}
+
+function populate_playlists(playlists: SimplifiedPlaylistObject[]) {
+  const playlists_elt = document.getElementById("playlists");
+  const playlistCards = document.getElementById("playlistCards");
+
+  const names = playlists.map((playlist) => playlist.name.replace(/["]+/g, ''))
+                         .filter((name) => name.length > 1);
+
+  document.getElementById("playlists_heading")!.innerText = "Your Playlists:";
+
+  // Add each name in the to the list of displayed playlists
+  playlists.forEach((playlist) => {
+    var li = document.createElement('li');
+    const displayName = playlist.name.replace(/["]+/g, '');
+    // Don't display playlists without a name
+    if (displayName.length === 0) {
+      return;
+    }
+    li.appendChild(document.createTextNode(displayName));
+    playlists_elt.appendChild(li);
+
+    // Respond to being clicked
+    li.addEventListener("click",async () => {
+      // For now make the background colour blue
+      li.style.backgroundColor = "blue";
+
+      console.log(`Selecting playlist with name: ${playlist.name}`);
+      // Get the tracks from the playlist
+
+      const images = await get_playlist_album_art(accessToken, playlist.tracks.href);
+      console.log(`images: ${JSON.stringify(images)}`);
+      display_album_art_grid(images);
+    });
+
+    // Add a card for each playlist
+    const card = document.createElement('div');
+    card.classList.add("card");
+
+    // Add an image for the playlist
+    if (!(playlist.images == null) && playlist.images.length > 0) {
+      const playlistImg = document.createElement('img');
+      playlistImg.classList.add("card-img-top");
+      playlistImg.src = playlist.images[0].url;
+      card.appendChild(playlistImg);
+    }
+
+    // Create the card body
+    const cardBody = document.createElement('div');
+    cardBody.classList.add("card-body");
+    const cardTitle = document.createElement('h4');
+    cardTitle.classList.add("card-title");
+    cardTitle.innerText = displayName;
+    cardBody.appendChild(cardTitle);
+    card.appendChild(cardBody);
+    playlistCards.appendChild(card);
+  });
 }
 
 function populateUI(profile: UserProfile) {

@@ -22,13 +22,27 @@ interface Image {
     width: number;
 }
 
-interface Playlists {
+interface SimplifiedPlaylistObject {
+  collaborative: boolean;
+  description: string;
+  external_urls: { spotify: string; };
   href: string;
-  limit: number;
-  next: string;
-  offset: number;
-  previous: number;
-  total: number;
-  items: any;
+  id: string;
+  images: Image[];
+  name: string;
+  owner: {
+    external_urls: { spotify: string; };
+    followers: { href: string; total: number; },
+    href: string;
+    id: string;
+    type: string;
+    uri: string;
+    display_name: string;
+  };
+  pubic: boolean;
+  snapshot_id: string;
+  tracks: { href: string; total: nuber; };
+  type: string;
+  uri: string;
 }
 //TODO Properly type 'items'
