@@ -152,24 +152,22 @@ function display_album_art_grid(images: Object[]) {
   let newBody = document.createElement("body");
   newBody.id = "imageBodyElement";
 
-  for (let row = 0; row < dimensions; row++) {
-    // Create a row div and add it to the body
-    console.log(`Creating row ${row}`);
-    let newRow = document.createElement("div");
-    newRow.classList.add("row");
-    newBody.appendChild(newRow);
-    for (let col = 0; col < dimensions; col++) {
-      // Create a column div and add it to the row
-      console.log(`Creating column ${col}`);
-      let newCol = document.createElement("div");
-      newCol.classList.add("column");
+  for (let col = 0; col < dimensions; col++) {
+    // Create a col div and add it to the body
+    console.log(`Creating col ${col}`);
+    let newCol = document.createElement("div");
+    newCol.classList.add("column");
+    newBody.appendChild(newCol);
+    for (let count = 0; count < dimensions; count++) {
+      // Create a div and add it to the column
+      console.log(`Creating image ${count}`);
+      let newImg = document.createElement("img");
 
       // Add the image to this cell
       const cellImage = new Image(200,200);
       console.log(`displaying image: ${images[0].url}`);
-      cellImage.src = images[dimensions * row + col].url;
-      newCol.appendChild(cellImage);
-      newRow.appendChild(newCol);
+      newImg.src = images[dimensions * col + count].url;
+      newCol.appendChild(newImg);
     }
   }
 
@@ -215,19 +213,18 @@ function populate_playlists(playlists: SimplifiedPlaylistObject[]) {
 
   // Add each name in the to the list of displayed playlists
   playlists.forEach((playlist) => {
-    var li = document.createElement('li');
     const displayName = playlist.name.replace(/["]+/g, '');
     // Don't display playlists without a name
     if (displayName.length === 0) {
       return;
     }
-    li.appendChild(document.createTextNode(displayName));
-    playlists_elt.appendChild(li);
 
-    // Respond to being clicked
-    li.addEventListener("click",async () => {
+    // Add a card for each playlist
+    const card = createPlaylistCard(playlist);
+    playlistCards.appendChild(card);
+    card.addEventListener("click",async () => {
       // For now make the background colour blue
-      li.style.backgroundColor = "blue";
+      card.style.backgroundColor = "blue";
 
       console.log(`Selecting playlist with name: ${playlist.name}`);
       // Get the tracks from the playlist
@@ -236,10 +233,6 @@ function populate_playlists(playlists: SimplifiedPlaylistObject[]) {
       console.log(`images: ${JSON.stringify(images)}`);
       display_album_art_grid(images);
     });
-
-    // Add a card for each playlist
-    const card = createPlaylistCard(playlist);
-    playlistCards.appendChild(card);
   });
 }
 
