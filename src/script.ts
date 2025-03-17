@@ -176,6 +176,34 @@ function display_album_art_grid(images: Object[]) {
   document.body = newBody;
 }
 
+function createPlaylistCard(playlist: SimplifiedPlaylistObject): Object {
+
+  // Create a card div
+  const card = document.createElement('div');
+  card.classList.add("card");
+
+  // Add an image for the playlist
+  if (!(playlist.images == null) && playlist.images.length > 0) {
+    const playlistImg = document.createElement('img');
+    playlistImg.classList.add("card-img-top");
+    playlistImg.src = playlist.images[0].url;
+    card.appendChild(playlistImg);
+  }
+
+  // Create the card body
+  const cardBody = document.createElement('div');
+  cardBody.classList.add("card-body");
+  // Add a title to the card body
+  const cardTitle = document.createElement('h4');
+  cardTitle.classList.add("card-title");
+  cardTitle.innerText = playlist.name.replace(/["]+/g, '');
+  cardBody.appendChild(cardTitle);
+  // Add the body to the card
+  card.appendChild(cardBody);
+
+  return card;
+}
+
 function populate_playlists(playlists: SimplifiedPlaylistObject[]) {
   const playlists_elt = document.getElementById("playlists");
   const playlistCards = document.getElementById("playlistCards");
@@ -210,25 +238,7 @@ function populate_playlists(playlists: SimplifiedPlaylistObject[]) {
     });
 
     // Add a card for each playlist
-    const card = document.createElement('div');
-    card.classList.add("card");
-
-    // Add an image for the playlist
-    if (!(playlist.images == null) && playlist.images.length > 0) {
-      const playlistImg = document.createElement('img');
-      playlistImg.classList.add("card-img-top");
-      playlistImg.src = playlist.images[0].url;
-      card.appendChild(playlistImg);
-    }
-
-    // Create the card body
-    const cardBody = document.createElement('div');
-    cardBody.classList.add("card-body");
-    const cardTitle = document.createElement('h4');
-    cardTitle.classList.add("card-title");
-    cardTitle.innerText = displayName;
-    cardBody.appendChild(cardTitle);
-    card.appendChild(cardBody);
+    const card = createPlaylistCard(playlist);
     playlistCards.appendChild(card);
   });
 }
