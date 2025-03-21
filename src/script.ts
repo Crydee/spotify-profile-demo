@@ -90,7 +90,7 @@ async function fetchProfile(token: string): Promise<UserProfile> {
 // Returns an array of pages of the response.
 async function get_paged_response(token: string, url: URL) {
 
-  var results: Object[] = [];
+  var results: object[] = [];
   while (url !== null) {
     // Fetch a page of the contents and read it's content
     var rsp = await fetch(`${url}`, {
@@ -129,10 +129,10 @@ async function fetchPlaylists(token: string): Promise<any> {
 }
 
 // From the playlist object, get the tracks
-async function get_playlist_album_art(token: string, tracksRef: string): Promise<Object> {
+async function get_playlist_album_art(token: string, tracksRef: string): Promise<object> {
   console.log(`playlist href is: ${tracksRef}`);
   const responses = await get_paged_response(token, tracksRef);
-  let images: Object[] = [];
+  let images: object[] = [];
   for (let rsp of responses) {
     rsp.items.map((item) => {
       if (item.track.type === "track") {
@@ -145,7 +145,7 @@ async function get_playlist_album_art(token: string, tracksRef: string): Promise
 }
 
 // Display the album art on the screen in a grid
-function display_album_art_grid(images: Object[]) {
+function display_album_art_grid(images: object[]) {
   const dimensions = Math.floor(Math.sqrt(images.length));
 
   // Create the new body element with a grid of images
@@ -174,7 +174,7 @@ function display_album_art_grid(images: Object[]) {
   document.body = newBody;
 }
 
-function createPlaylistCard(playlist: SimplifiedPlaylistObject): Object {
+function createPlaylistCard(playlist: SimplifiedPlaylistObject): object {
 
   // Create a card div
   const card = document.createElement('div');
